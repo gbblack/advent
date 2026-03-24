@@ -26,9 +26,9 @@ func readFile(path string) ([]string, error) {
 	return lines, nil
 }
 
-func initArr(n int) []int {
+func newArr(n int) []int {
 	arr := make([]int, n)
-	for i := 0; i < n; i++ {
+	for i := range arr {
 		arr[i] = i
 	}
 	return arr
@@ -44,8 +44,38 @@ func move(current_idx, k, n int) int {
 	return (current_idx + k%n + n) % n
 }
 
-func processMoves(lines []string) (int, error) {
-	arr := initArr(100)
+func dialWalk(lines []string) (int, error) {
+	arr := newArr(100)
+	currIdx := 50
+	count := 0
+
+	for _, line := range lines {
+		direction, distance := parseLine(line)
+		k, err := strconv.Atoi(distance)
+		if err != nil {
+			return 0, err
+		}
+
+		var newIdx int
+		for i := 1; i <= k; i++ {
+			switch direction {
+			case "R":
+				newIdx = move(currIdx, i, len(arr))
+			case "L":
+				newIdx = move(currIdx, -i, len(arr))
+			}
+			if arr[newIdx] == 0 {
+				count++
+			}
+		}
+		currIdx = newIdx
+
+	}
+	return count, nil
+}
+
+func dialJump(lines []string) (int, error) {
+	arr := newArr(100)
 	currIdx := 50
 	count := 0
 
@@ -79,10 +109,17 @@ func DayOne() {
 		log.Fatalf("could not read file: %s", err)
 	}
 
-	count, err := processMoves(lines)
+	count, err := dialJump(lines)
 	if err != nil {
-		log.Fatalf("coould not process moces: %s", err)
+		log.Fatalf("coould not process jump: %s", err)
 	}
 
-	fmt.Printf("Password: %d\n", count)
+	fmt.Printf("Part 1 Password: %d\n", count)
+
+	count, err = dialWalk(lines)
+	if err != nil {
+		log.Fatalf("coould not process clicks: %s", err)
+	}
+
+	fmt.Printf("Part 2 Password: %d\n", count)
 }
