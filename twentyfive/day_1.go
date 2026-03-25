@@ -8,6 +8,11 @@ import (
 	"strconv"
 )
 
+type rotation struct {
+	direction rune
+	distance  int
+}
+
 func readFile(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -26,81 +31,56 @@ func readFile(path string) ([]string, error) {
 	return lines, nil
 }
 
-func newArr(n int) []int {
-	arr := make([]int, n)
-	for i := range arr {
-		arr[i] = i
+func parseInput(lines []string) ([]rotation, error) {
+	rotations := make([]rotation, 0, len(lines))
+	for _, line := range lines {
+		dist, err := strconv.Atoi(line[1:])
+		if err != nil {
+			return nil, fmt.Errorf("invalid distance in %q: %w", line, err)
+		}
+		rotations = append(rotations, rotation{direction: rune(line[0]), distance: dist})
 	}
-	return arr
+	return rotations, nil
 }
 
-func parseLine(line string) (string, string) {
-	direction := line[0:1]
-	distance := line[1:]
-	return direction, distance
+func move(position, k, n int) int {
+	return (position + k%n + n) % n
 }
 
-func move(current_idx, k, n int) int {
-	return (current_idx + k%n + n) % n
-}
-
-func dialWalk(lines []string) (int, error) {
-	arr := newArr(100)
-	currIdx := 50
+func dialJump(rotations []rotation, dialSize, start int) int {
+	position := start
 	count := 0
 
-	for _, line := range lines {
-		direction, distance := parseLine(line)
-		k, err := strconv.Atoi(distance)
-		if err != nil {
-			return 0, err
+	for _, r := range rotations {
+		sign := 1
+		if r.direction == 'L' {
+			sign = -1
 		}
+		position = move(position, sign*r.distance, dialSize)
+		if position == 0 {
+			count++
+		}
+	}
+	return count
+}
 
-		var newIdx int
-		for i := 1; i <= k; i++ {
-			switch direction {
-			case "R":
-				newIdx = move(currIdx, i, len(arr))
-			case "L":
-				newIdx = move(currIdx, -i, len(arr))
-			}
-			if arr[newIdx] == 0 {
+func dialWalk(rotations []rotation, dialSize, start int) int {
+	position := start
+	count := 0
+
+	for _, r := range rotations {
+		sign := 1
+		if r.direction == 'L' {
+			sign = -1
+		}
+		for range r.distance {
+			position = move(position, sign, dialSize)
+			if position == 0 {
 				count++
 			}
 		}
-		currIdx = newIdx
-
 	}
-	return count, nil
-}
-
-func dialJump(lines []string) (int, error) {
-	arr := newArr(100)
-	currIdx := 50
-	count := 0
-
-	for _, line := range lines {
-		direction, distance := parseLine(line)
-		k, err := strconv.Atoi(distance)
-		if err != nil {
-			return 0, err
-		}
-
-		var newIdx int
-		switch direction {
-		case "R":
-			newIdx = move(currIdx, k, len(arr))
-		case "L":
-			newIdx = move(currIdx, -k, len(arr))
-		}
-
-		if arr[newIdx] == 0 {
-			count++
-		}
-
-		currIdx = newIdx
-	}
-	return count, nil
+	return count
 }
 
 func DayOne() {
@@ -109,17 +89,10 @@ func DayOne() {
 		log.Fatalf("could not read file: %s", err)
 	}
 
-	count, err := dialJump(lines)
+	rotations, err := parseInput(lines)
 	if err != nil {
-		log.Fatalf("coould not process jump: %s", err)
+		log.Fatalf("could not parse input: %s", err)
 	}
-
-	fmt.Printf("Part 1 Password: %d\n", count)
-
-	count, err = dialWalk(lines)
-	if err != nil {
-		log.Fatalf("coould not process clicks: %s", err)
-	}
-
-	fmt.Printf("Part 2 Password: %d\n", count)
+	fmt.Printf("Part 1 Password: %d\n", dialJump(rotations, 100, 50))
+	fmt.Printf("Part 2 Password: %d\n", dialWalk(rotations, 100, 50))
 }
