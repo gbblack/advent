@@ -3,97 +3,59 @@ package twentyfive
 import (
 	"fmt"
 	"log"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type productIDRange struct {
-	firstID string
-	lastID string
+	first, last int
 }
 
-func parseRanges(input string) []productIDRange {
-	v := strings.Split(input, ",")
-	productRange := make([]productIDRange, 0, len(v))
-	for _, pidr := range v {
-		idrange := strings.Split(pidr, "-")
-		productRange = append(productRange, productIDRange{
-			firstID: idrange[0], 
-			lastID: idrange[1],
-		})
+func parseRanges(input string) ([]productIDRange, error) {
+	parts := strings.Split(input, ",")
+	ranges := make([]productIDRange, 0, len(parts))
+	for _, p := range parts {
+		ends := strings.Split(p, "-")
+		first, err := strconv.Atoi(ends[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid range start in %q: %w", p, err)
+		}
+		last, err := strconv.Atoi(ends[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid range end in %q: %w", p, err)
+		}
+		ranges = append(ranges, productIDRange{first, last})
 	}
-	return productRange
+	return ranges, nil
 }
 
-func isInvalid(id string) bool {
-	if len(id) % 2 != 0 {
+func isDuplicated(id string) bool {
+	n := len(id)
+	if n%2 != 0 {
 		return false
 	}
-
-	mid := len(id)/2
-	left := id[:mid]
-	right := id[mid:]
-
-	return left == right
-}
-
-func sumInvalidIds(pidr []productIDRange) (int, error) {
-	sum := 0
-
-	for _, p := range pidr {
-		firstNum, err := strconv.Atoi(p.firstID)
-		if err != nil {
-			return 0, fmt.Errorf("invalid firstID in %q: %w", p.firstID, err)
-		}
-		lastNum, err := strconv.Atoi(p.lastID)
-		if err != nil {
-			return 0, fmt.Errorf("invalid lastID in %q: %w", p.lastID, err)
-		}
-
-		for i := firstNum; i < lastNum + 1; i++ {
-			s := strconv.Itoa(i)
-			if isInvalid(s) {
-				sum += i
-			}
-		}
-	}
-
-	return sum, nil
+	return id[:n/2] == id[n/2:]
 }
 
 func isRepeating(id string) bool {
 	doubled := id + id
-	n := len(id)
-	for i := 1; i < n; i++ {
-		substring := doubled[i:i+n]
-		if substring == id {
-			return true
-		}
+	pos := strings.Index(doubled[1:], id)
+	if pos == -1 {
+		return false
 	}
-	return false
+	return pos < len(id)-1
 }
-func sumMoreInvalidIds(pidr []productIDRange) (int, error) {
+
+func sumIDs(ranges []productIDRange, invalid func(string) bool) int {
 	sum := 0
-
-	for _, p := range pidr {
-		firstNum, err := strconv.Atoi(p.firstID)
-		if err != nil {
-			return 0, fmt.Errorf("invalid firstID in %q: %w", p.firstID, err)
-		}
-		lastNum, err := strconv.Atoi(p.lastID)
-		if err != nil {
-			return 0, fmt.Errorf("invalid lastID in %q: %w", p.lastID, err)
-		}
-
-		for i := firstNum; i < lastNum + 1; i++ {
-			s := strconv.Itoa(i)
-			if isRepeating(s) {
+	for _, r := range ranges {
+		for i := r.first; i <= r.last; i++ {
+			if invalid(strconv.Itoa(i)) {
 				sum += i
 			}
 		}
 	}
-
-	return sum, nil
+	return sum
 }
 
 func DayTwo() {
@@ -101,10 +63,10 @@ func DayTwo() {
 	if err != nil {
 		log.Fatalf("could not read file: %s", err)
 	}
-	ids := parseRanges(text)
-	sum, err := sumMoreInvalidIds(ids)
+	ranges, err := parseRanges(text)
 	if err != nil {
-		log.Fatalf("could not sum ids: %s", err)
+		log.Fatalf("could not parse input: %s", err)
 	}
-	fmt.Println(sum)
+	fmt.Printf("Part 1 Sum: %d\n", sumIDs(ranges, isDuplicated))
+	fmt.Printf("Part 2 Sum: %d\n", sumIDs(ranges, isRepeating))
 }
