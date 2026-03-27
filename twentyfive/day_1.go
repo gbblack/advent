@@ -1,10 +1,8 @@
 package twentyfive
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
 )
 
@@ -13,27 +11,9 @@ type rotation struct {
 	distance  int
 }
 
-func readFile(path string) ([]string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return lines, nil
-}
-
-func parseInput(lines []string) ([]rotation, error) {
-	rotations := make([]rotation, 0, len(lines))
-	for _, line := range lines {
+func parseRotations(input []string) ([]rotation, error) {
+	rotations := make([]rotation, 0, len(input))
+	for _, line := range input {
 		dist, err := strconv.Atoi(line[1:])
 		if err != nil {
 			return nil, fmt.Errorf("invalid distance in %q: %w", line, err)
@@ -84,12 +64,12 @@ func dialWalk(rotations []rotation, dialSize, start int) int {
 }
 
 func DayOne() {
-	lines, err := readFile("inputs/2025_day_1.txt")
+	lines, err := readFileLineByLine("inputs/2025_day_1.txt")
 	if err != nil {
 		log.Fatalf("could not read file: %s", err)
 	}
 
-	rotations, err := parseInput(lines)
+	rotations, err := parseRotations(lines)
 	if err != nil {
 		log.Fatalf("could not parse input: %s", err)
 	}
