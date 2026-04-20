@@ -3,5 +3,5 @@ package main
 import "advent/twentyfive"
 
 func main() {
-	twentyfive.DayThree()
+	twentyfive.DayFour()
 }
